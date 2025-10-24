@@ -22,6 +22,9 @@ execute:
 
 ```{r}
 #| label: wd-1-csv-1
+# Lab 2 Question 1
+
+surveys <- read_csv(here::here("Week 2", "Lab 2", "surveys.csv"))
 
 ```
 
@@ -29,6 +32,9 @@ execute:
 
 ```{r}
 #| label: wd-1-csv-2
+#Lab 3 Question 2
+
+surveys <- read_csv(here::here("Week 3", "Lab 3", "teacher_evals.csv"))
 
 ```
 
@@ -45,7 +51,14 @@ execute:
 
 ```{r}
 #| label: wd-2-ex-1
-
+ca_childcare |>
+  filter(study_year %in% c(2008, 2018)) |>
+  group_by(census_region, study_year) |>
+  summarize(median_income = median(mhi_2018, na.rm = TRUE)) |>
+  select(census_region, study_year, median_income) |>
+  pivot_wider(names_from = study_year, values_from = median_income, names_prefix = "median_income_") |>
+  arrange(desc(median_income_2018)) |>
+  ungroup()
 ```
 
 -   Example removing specified columns
@@ -59,7 +72,33 @@ execute:
 
 ```{r}
 #| label: wd-2-ex-3
+# Lab 4 Question 7
 
+my_colors = colorRampPalette(brewer.pal(7, "Accent"))(10)
+graph_maker <- ca_childcare |>
+  select(census_region, study_year, starts_with("mc_")) |>
+  pivot_longer(cols = c(mc_infant, mc_toddler, mc_preschool),
+               names_to = "age_group",
+               values_to = "monthly_cost") |>
+  mutate(age_group = fct_recode(age_group,
+                                "Infant" = "mc_infant",
+                                "Toddler" = "mc_toddler",
+                                "Preschool" = "mc_preschool"), 
+         age_group = fct_relevel(age_group, "Infant", "Toddler", "Preschool")
+         )
+ggplot(data = graph_maker, 
+       mapping = aes(x = study_year, y = monthly_cost,
+                     color = fct_reorder2(.f = census_region, .x = study_year, .y = monthly_cost))) +
+  geom_point() +
+  geom_smooth() +
+  theme_bw() +
+  theme(aspect.ratio = 1, axis.text.x = element_text(size = 5, angle = 45, hjust = 1)) +
+  scale_color_manual(values = my_colors) +
+  labs(
+    title = "Weekly Median Price for Center-Based Childcare ($)",
+    x = "Study Year", y = "", color = "California Region") +
+  facet_grid(~ age_group) +
+  scale_x_continuous(breaks = unique(graph_maker$study_year))
 ```
 
 **WD-3: I can filter rows from a dataframe for a *variety* of data types (e.g., numeric, integer, character, factor, date).**
@@ -68,28 +107,79 @@ execute:
 
 ```{r}
 #| label: wd-3-numeric-ex-1
+# Lab 3 Question 5
 
+teacher_evals_clean <- surveys |>
+  rename(sex = gender) |>
+  filter(no_participants >= 10) |>
+  mutate(course_id = as.character(course_id),
+         teacher_id = as.character(teacher_id),
+         sex = as.factor(sex)) |>
+  select(course_id,
+         teacher_id,
+         question_no,
+         no_participants,
+         resp_share,
+         SET_score_avg,
+         percent_failed_cur,
+         academic_degree,
+         seniority,
+         sex)
 ```
 
 -   Numeric Example 2
 
 ```{r}
-#| label: wd-3-numeric-ex-1
+#| label: wd-3-numeric-ex-2
+#Challenge 3 Chunk 3
 
+teacher_evals_compare <- surveys |>
+  filter(question_no == 903) |>
+  mutate(SET_level = case_when(
+          SET_score_avg >= 4 ~ "excellent",
+          SET_score_avg < 4 ~ "standard"),
+         sen_level = case_when(
+           seniority <= 4 ~ "junior",
+           seniority <= 8 ~ "senior",
+           seniority > 8 ~ "very senior"
+         )) |>
+  select(course_id, SET_level, sen_level)
 ```
 
 -   Character Example 1 (any context)
 
 ```{r}
 #| label: wd-3-character
+# Challenge 4 Chunk 3
 
+clean_data <- counties |>
+  left_join(childcare_costs, join_by(county_fips_code)) |>
+  filter(state_name == "California") |>
+  group_by(study_year) |>
+  summarise(mcsa = median(mcsa, na.rm = TRUE), 
+            mfccsa = median(mfccsa, na.rm = TRUE), 
+            mhi_2018 = median(mhi_2018, na.rm = TRUE)) |>
+  select(study_year, mcsa, mfccsa, mhi_2018)
 ```
 
 -   Character Example 2 (example must use functions from **stringr**)
 
 ```{r}
 #| label: wd-3-string
+# Lab 5 Chunk 5
 
+gym_member <- get_fit_now_member |>
+  left_join(y = get_fit_now_check_in, join_by(id == membership_id)) |>
+  filter(str_detect(membership_status, 
+           pattern = "gold"), 
+         str_detect(id, 
+           pattern = "^48Z"))
+#two options, Joe Germuska or Jeremy Bowers, need to check license plate now.
+plate_check <- almost_everything_data |>
+  filter(str_detect(name.x, 
+           pattern = "Jeremy Bowers")) |>
+  pull(transcript)
+plate_check
 ```
 
 -   Date (example must use functions from **lubridate**)
@@ -105,7 +195,19 @@ execute:
 
 ```{r}
 #| label: wd-4-numeric-ex-1
+# Challenge 3 Question 1
 
+teacher_evals_compare <- surveys |>
+  filter(question_no == 903) |>
+  mutate(SET_level = case_when(
+          SET_score_avg >= 4 ~ "excellent",
+          SET_score_avg < 4 ~ "standard"),
+         sen_level = case_when(
+           seniority <= 4 ~ "junior",
+           seniority <= 8 ~ "senior",
+           seniority > 8 ~ "very senior"
+         )) |>
+  select(course_id, SET_level, sen_level)
 ```
 
 -   Numeric Example 2
@@ -119,21 +221,70 @@ execute:
 
 ```{r}
 #| label: wd-4-factor-ex-1
+# Lab 4 Question 4
 
+ca_childcare <- ca_childcare |> 
+  mutate(county_name = str_remove(county_name, " County"),
+         census_region = fct_collapse(county_name, "Superior Counties" = superior_counties,
+                                                    "North Coast Counties" = north_coast_counties,
+                                                    "San Fancisco Counties" = san_fran_counties,
+                                                    "North San Joaquin Valley Counties" = n_san_joaquin_counties,
+                                                    "Central Coast Counties" = central_coast_counties,
+                                                    "South San Joaquin Valley Counties" = s_san_joaquin_counties,
+                                                    "Inland Counties" = inland_counties,
+                                                    "Los Angeles County" = la_county,
+                                                    "Orange County" = orange_county,
+                                                    "San Diego and Imperial County" = san_diego_imperial_counties))
 ```
 
 -   Factor Example 2 (reordering levels)
 
 ```{r}
 #| label: wd-4-factor-ex-2
+# Challenge 4 Chunk 5
 
+plot <- clean_data |>
+  rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
+  pivot_longer(cols = -study_year, names_to = "Variable", values_to = "value") |>
+  mutate(Variable = fct_relevel(Variable, 
+                                "Weekly Center Based Care Price", 
+                                "Weekly Family Based Care Price", 
+                                "Median Income")
+         )
+
+ggplot(plot, aes(study_year, value, color = Variable)) +
+  geom_line() +
+  scale_y_continuous(labels = label_dollar()) +
+  labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
+  facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
+  theme_linedraw() +
+  scale_x_continuous(breaks = unique(plot$study_year)) +
+  theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
+        plot.subtitle = element_text(size = 10),
+        legend.position = "none",
+        aspect.ratio = 0.9,
+        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+  scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
 -   Character (example must use functions from **stringr**)
 
 ```{r}
 #| label: wd-4-string
+# Lab 4 Question 4
 
+ca_childcare <- ca_childcare |> 
+  mutate(county_name = str_remove(county_name, " County"),
+         census_region = fct_collapse(county_name, "Superior Counties" = superior_counties,
+                                                    "North Coast Counties" = north_coast_counties,
+                                                    "San Fancisco Counties" = san_fran_counties,
+                                                    "North San Joaquin Valley Counties" = n_san_joaquin_counties,
+                                                    "Central Coast Counties" = central_coast_counties,
+                                                    "South San Joaquin Valley Counties" = s_san_joaquin_counties,
+                                                    "Inland Counties" = inland_counties,
+                                                    "Los Angeles County" = la_county,
+                                                    "Orange County" = orange_county,
+                                                    "San Diego and Imperial County" = san_diego_imperial_counties))
 ```
 
 -   Date (example must use functions from **lubridate**)
@@ -149,7 +300,20 @@ execute:
 
 ```{r}
 #| label: wd-5-left-ex-1
+# Lab 5 Chunk 5
 
+gym_member <- get_fit_now_member |>
+  left_join(y = get_fit_now_check_in, join_by(id == membership_id)) |>
+  filter(str_detect(membership_status, 
+           pattern = "gold"), 
+         str_detect(id, 
+           pattern = "^48Z"))
+#two options, Joe Germuska or Jeremy Bowers, need to check license plate now.
+plate_check <- almost_everything_data |>
+  filter(str_detect(name.x, 
+           pattern = "Jeremy Bowers")) |>
+  pull(transcript)
+plate_check
 ```
 
 -   `right_join()` Example 1
@@ -163,7 +327,16 @@ execute:
 
 ```{r}
 #| label: wd-5-left-right-ex-2
+# Challenge 4 Chunk 3
 
+clean_data <- counties |>
+  left_join(childcare_costs, join_by(county_fips_code)) |>
+  filter(state_name == "California") |>
+  group_by(study_year) |>
+  summarise(mcsa = median(mcsa, na.rm = TRUE), 
+            mfccsa = median(mfccsa, na.rm = TRUE), 
+            mhi_2018 = median(mhi_2018, na.rm = TRUE)) |>
+  select(study_year, mcsa, mfccsa, mhi_2018)
 ```
 
 -   `inner_join()` Example 1
@@ -202,13 +375,48 @@ execute:
 
 ```{r}
 #| label: wd-7-long
+# Challenge 4 Chunk 5
 
+plot <- clean_data |>
+  rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
+  pivot_longer(cols = -study_year, names_to = "Variable", values_to = "value") |>
+  mutate(Variable = fct_relevel(Variable, 
+                                "Weekly Center Based Care Price", 
+                                "Weekly Family Based Care Price", 
+                                "Median Income")
+         )
+
+ggplot(plot, aes(study_year, value, color = Variable)) +
+  geom_line() +
+  scale_y_continuous(labels = label_dollar()) +
+  labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
+  facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
+  theme_linedraw() +
+  scale_x_continuous(breaks = unique(plot$study_year)) +
+  theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
+        plot.subtitle = element_text(size = 10),
+        legend.position = "none",
+        aspect.ratio = 0.9,
+        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+  scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
 -   `pivot_wider()`
 
 ```{r}
 #| label: wd-7-wide
+# Challenge 4 Chunk4
+
+options(width = 200)
+clean_data |>
+  rename('Center Based Care Price' = mcsa,
+         'Family Based Care Price' = mfccsa,
+         'Median Income' = mhi_2018) |>
+  pivot_longer(cols = c('Center Based Care Price', 'Family Based Care Price', 'Median Income'),
+               names_to = "Variable", 
+               values_to = "value") |>
+  pivot_wider(names_from = study_year, values_from = value) |>
+  as.data.frame()
 
 ```
 
@@ -218,11 +426,11 @@ execute:
 
 The following assignments satisfy the above criteria:
 
--   Example 1
--   Example 2
--   Example 3
--   Example 4
--   Example 5
+-   Challenge 4
+-   Lab 2
+-   Challenge 2
+-   Challenge 3
+-   Lab 1
 
 **R-2: I can write well documented and tidy code.**
 
@@ -230,14 +438,46 @@ The following assignments satisfy the above criteria:
 
 ```{r}
 #| label: r-2-1
+# Challenge 4 Chunk 5
 
+plot <- clean_data |>
+  rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
+  pivot_longer(cols = -study_year, names_to = "Variable", values_to = "value") |>
+  mutate(Variable = fct_relevel(Variable, 
+                                "Weekly Center Based Care Price", 
+                                "Weekly Family Based Care Price", 
+                                "Median Income")
+         )
+
+ggplot(plot, aes(study_year, value, color = Variable)) +
+  geom_line() +
+  scale_y_continuous(labels = label_dollar()) +
+  labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
+  facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
+  theme_linedraw() +
+  scale_x_continuous(breaks = unique(plot$study_year)) +
+  theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
+        plot.subtitle = element_text(size = 10),
+        legend.position = "none",
+        aspect.ratio = 0.9,
+        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+  scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
 -   Example of **dplyr** pipeline
 
 ```{r}
 #| label: r-2-2
+# Challenge 4 Chunk 3
 
+clean_data <- counties |>
+  left_join(childcare_costs, join_by(county_fips_code)) |>
+  filter(state_name == "California") |>
+  group_by(study_year) |>
+  summarise(mcsa = median(mcsa, na.rm = TRUE), 
+            mfccsa = median(mfccsa, na.rm = TRUE), 
+            mhi_2018 = median(mhi_2018, na.rm = TRUE)) |>
+  select(study_year, mcsa, mfccsa, mhi_2018)
 ```
 
 -   Example of function formatting
@@ -271,7 +511,15 @@ The following assignments satisfy the above criteria:
 
 ```{r}
 #| label: dvs-1-num
+# Lab 4 Question 8
 
+scatterplot <- ca_childcare |>
+  select(mc_infant, mhi_2018)
+ggplot(data = scatterplot, mapping = aes(x = mhi_2018, y = mc_infant)) +
+  geom_point()+
+  theme_bw() +
+  labs(x = "Median Household Income", y = "Infant Childcare Cost") +
+  geom_smooth(method ='lm', formula = y~x)
 ```
 
 -   At least one numeric variable and one categorical variable
@@ -301,35 +549,153 @@ The following assignments satisfy the above criteria:
 
 ```{r}
 #| label: dvs-2-ex-1
+# Challenge 4 Chunk 5
 
+plot <- clean_data |>
+  rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
+  pivot_longer(cols = -study_year, names_to = "Variable", values_to = "value") |>
+  mutate(Variable = fct_relevel(Variable, 
+                                "Weekly Center Based Care Price", 
+                                "Weekly Family Based Care Price", 
+                                "Median Income")
+         )
+
+ggplot(plot, aes(study_year, value, color = Variable)) +
+  geom_line() +
+  scale_y_continuous(labels = label_dollar()) +
+  labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
+  facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
+  theme_linedraw() +
+  scale_x_continuous(breaks = unique(plot$study_year)) +
+  theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
+        plot.subtitle = element_text(size = 10),
+        legend.position = "none",
+        aspect.ratio = 0.9,
+        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+  scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
 -   I can modify my colors to be accessible to anyone's eyes
 
 ```{r}
 #| label: dvs-2-ex-2
+# Challenge 4 Chunk 5
 
+plot <- clean_data |>
+  rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
+  pivot_longer(cols = -study_year, names_to = "Variable", values_to = "value") |>
+  mutate(Variable = fct_relevel(Variable, 
+                                "Weekly Center Based Care Price", 
+                                "Weekly Family Based Care Price", 
+                                "Median Income")
+         )
+
+ggplot(plot, aes(study_year, value, color = Variable)) +
+  geom_line() +
+  scale_y_continuous(labels = label_dollar()) +
+  labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
+  facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
+  theme_linedraw() +
+  scale_x_continuous(breaks = unique(plot$study_year)) +
+  theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
+        plot.subtitle = element_text(size = 10),
+        legend.position = "none",
+        aspect.ratio = 0.9,
+        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+  scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
 -   I can modify my plot titles to clearly communicate the data context
 
 ```{r}
 #| label: dvs-2-ex-3
+# Challenge 4 Chunk 5
 
+plot <- clean_data |>
+  rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
+  pivot_longer(cols = -study_year, names_to = "Variable", values_to = "value") |>
+  mutate(Variable = fct_relevel(Variable, 
+                                "Weekly Center Based Care Price", 
+                                "Weekly Family Based Care Price", 
+                                "Median Income")
+         )
+
+ggplot(plot, aes(study_year, value, color = Variable)) +
+  geom_line() +
+  scale_y_continuous(labels = label_dollar()) +
+  labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
+  facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
+  theme_linedraw() +
+  scale_x_continuous(breaks = unique(plot$study_year)) +
+  theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
+        plot.subtitle = element_text(size = 10),
+        legend.position = "none",
+        aspect.ratio = 0.9,
+        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+  scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
 -   I can modify the text in my plot to be more readable
 
 ```{r}
 #| label: dvs-2-ex-4
+# Challenge 4 Chunk 5
 
+plot <- clean_data |>
+  rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
+  pivot_longer(cols = -study_year, names_to = "Variable", values_to = "value") |>
+  mutate(Variable = fct_relevel(Variable, 
+                                "Weekly Center Based Care Price", 
+                                "Weekly Family Based Care Price", 
+                                "Median Income")
+         )
+
+ggplot(plot, aes(study_year, value, color = Variable)) +
+  geom_line() +
+  scale_y_continuous(labels = label_dollar()) +
+  labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
+  facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
+  theme_linedraw() +
+  scale_x_continuous(breaks = unique(plot$study_year)) +
+  theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
+        plot.subtitle = element_text(size = 10),
+        legend.position = "none",
+        aspect.ratio = 0.9,
+        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+  scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
 -   I can reorder my legend to align with the colors in my plot
 
 ```{r}
 #| label: dvs-2-ex-5
+#Lab 4 Question 7
 
+my_colors = colorRampPalette(brewer.pal(7, "Accent"))(10)
+graph_maker <- ca_childcare |>
+  select(census_region, study_year, starts_with("mc_")) |>
+  pivot_longer(cols = c(mc_infant, mc_toddler, mc_preschool),
+               names_to = "age_group",
+               values_to = "monthly_cost") |>
+  mutate(age_group = fct_recode(age_group,
+                                "Infant" = "mc_infant",
+                                "Toddler" = "mc_toddler",
+                                "Preschool" = "mc_preschool"), 
+         age_group = fct_relevel(age_group, "Infant", "Toddler", "Preschool")
+         )
+ggplot(data = graph_maker, 
+       mapping = aes(x = study_year, y = monthly_cost,
+                     color = fct_reorder2(.f = census_region, .x = study_year, .y = monthly_cost))) +
+  geom_point() +
+  geom_smooth() +
+  theme_bw() +
+  theme(aspect.ratio = 1, axis.text.x = element_text(size = 5, angle = 45, hjust = 1)) +
+  scale_color_manual(values = my_colors) +
+  labs(
+    title = "Weekly Median Price for Center-Based Childcare ($)",
+    x = "Study Year", y = "", color = "California Region") +
+  facet_grid(~ age_group) +
+  scale_x_continuous(breaks = unique(graph_maker$study_year))
 ```
 
 **DVS-3: I show creativity in my visualizations**
@@ -338,7 +704,33 @@ The following assignments satisfy the above criteria:
 
 ```{r}
 #| label: dvs-3-1-ex-1
+#Lab 4 Question 7
 
+my_colors = colorRampPalette(brewer.pal(7, "Accent"))(10)
+graph_maker <- ca_childcare |>
+  select(census_region, study_year, starts_with("mc_")) |>
+  pivot_longer(cols = c(mc_infant, mc_toddler, mc_preschool),
+               names_to = "age_group",
+               values_to = "monthly_cost") |>
+  mutate(age_group = fct_recode(age_group,
+                                "Infant" = "mc_infant",
+                                "Toddler" = "mc_toddler",
+                                "Preschool" = "mc_preschool"), 
+         age_group = fct_relevel(age_group, "Infant", "Toddler", "Preschool")
+         )
+ggplot(data = graph_maker, 
+       mapping = aes(x = study_year, y = monthly_cost,
+                     color = fct_reorder2(.f = census_region, .x = study_year, .y = monthly_cost))) +
+  geom_point() +
+  geom_smooth() +
+  theme_bw() +
+  theme(aspect.ratio = 1, axis.text.x = element_text(size = 5, angle = 45, hjust = 1)) +
+  scale_color_manual(values = my_colors) +
+  labs(
+    title = "Weekly Median Price for Center-Based Childcare ($)",
+    x = "Study Year", y = "", color = "California Region") +
+  facet_grid(~ age_group) +
+  scale_x_continuous(breaks = unique(graph_maker$study_year))
 ```
 
 -   I can use non-standard colors (Example 2)
@@ -368,7 +760,17 @@ The following assignments satisfy the above criteria:
 
 ```{r}
 #| label: dvs-4-summarize
+# Lab 4 Question 6
 
+ca_childcare |>
+  filter(study_year == 2018) |>
+  group_by(census_region, study_year) |>
+  summarize(median_cost = median(mc_infant, na.rm = TRUE)) |>
+  select(census_region, study_year, median_cost) |>
+  pivot_wider(names_from = study_year, values_from = median_cost, names_prefix = "median_infant_childcare_cost_") |>
+  arrange(desc(median_infant_childcare_cost_2018)) |>
+  ungroup() |>
+  slice_min(order_by = median_infant_childcare_cost_2018, n = 1)
 ```
 
 -   Example using `across()`
@@ -384,14 +786,32 @@ The following assignments satisfy the above criteria:
 
 ```{r}
 #| label: dvs-5-1
+# Challenge 4 Chunk 3
 
+clean_data <- counties |>
+  left_join(childcare_costs, join_by(county_fips_code)) |>
+  filter(state_name == "California") |>
+  group_by(study_year) |>
+  summarise(mcsa = median(mcsa, na.rm = TRUE), 
+            mfccsa = median(mfccsa, na.rm = TRUE), 
+            mhi_2018 = median(mhi_2018, na.rm = TRUE)) |>
+  select(study_year, mcsa, mfccsa, mhi_2018)
 ```
 
 -   Example 2
 
 ```{r}
 #| label: dvs-5-2
+# Lab 4 Question 5
 
+ca_childcare |>
+  filter(study_year %in% c(2008, 2018)) |>
+  group_by(census_region, study_year) |>
+  summarize(median_income = median(mhi_2018, na.rm = TRUE)) |>
+  select(census_region, study_year, median_income) |>
+  pivot_wider(names_from = study_year, values_from = median_income, names_prefix = "median_income_") |>
+  arrange(desc(median_income_2018)) |>
+  ungroup()
 ```
 
 **DVS-6: I can create tables which make my summaries clear to the reader.**
@@ -400,7 +820,16 @@ The following assignments satisfy the above criteria:
 
 ```{r}
 #| label: dvs-6-ex-1
+# Lab 4 Question 5
 
+ca_childcare |>
+  filter(study_year %in% c(2008, 2018)) |>
+  group_by(census_region, study_year) |>
+  summarize(median_income = median(mhi_2018, na.rm = TRUE)) |>
+  select(census_region, study_year, median_income) |>
+  pivot_wider(names_from = study_year, values_from = median_income, names_prefix = "median_income_") |>
+  arrange(desc(median_income_2018)) |>
+  ungroup()
 ```
 
 -   I can modify the text in my table to be more readable (e.g., bold face for column headers)
@@ -414,7 +843,16 @@ The following assignments satisfy the above criteria:
 
 ```{r}
 #| label: dvs-6-ex-3
+# Lab 4 Question 5
 
+ca_childcare |>
+  filter(study_year %in% c(2008, 2018)) |>
+  group_by(census_region, study_year) |>
+  summarize(median_income = median(mhi_2018, na.rm = TRUE)) |>
+  select(census_region, study_year, median_income) |>
+  pivot_wider(names_from = study_year, values_from = median_income, names_prefix = "median_income_") |>
+  arrange(desc(median_income_2018)) |>
+  ungroup()
 ```
 
 **DVS-7: I show creativity in my tables.**
@@ -441,7 +879,16 @@ The following assignments satisfy the above criteria:
 
 ```{r}
 #| label: pe-1-one-call
+# Challenge 4 Chunk 3
 
+clean_data <- counties |>
+  left_join(childcare_costs, join_by(county_fips_code)) |>
+  filter(state_name == "California") |>
+  group_by(study_year) |>
+  summarise(mcsa = median(mcsa, na.rm = TRUE), 
+            mfccsa = median(mfccsa, na.rm = TRUE), 
+            mhi_2018 = median(mhi_2018, na.rm = TRUE)) |>
+  select(study_year, mcsa, mfccsa, mhi_2018)
 ```
 
 -   using `across()`
@@ -544,21 +991,31 @@ The following assignments satisfy the above criteria:
 
 ```{r}
 #| label: dsm-2-1
+# Lab 4 Question 9
 
+reg_mod1 <- lm(formula = mc_infant ~ mhi_2018, data = scatterplot)
+summary(reg_mod1)
 ```
 
 -   Example 2
 
 ```{r}
 #| label: dsm-2-2
+#Challenge 3 Question 3
 
+chisq.test(table(teacher_evals_compare$SET_level,
+                 teacher_evals_compare$sen_level))
 ```
 
 -   Example 3
 
 ```{r}
 #| label: dsm-2-3
+# Lab 2 Question 17
 
+species_mod <- aov(weight ~ species, data = surveys)
+
+summary(species_mod)
 ```
 
 ## Revising My Thinking
