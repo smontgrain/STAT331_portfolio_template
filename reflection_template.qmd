@@ -10,7 +10,7 @@ execute:
   echo: true
 ---
 
-[**My Grade:**]{.underline} I believe my grade equivalent to course work evidenced below to be an A-.
+[**My Grade:**]{.underline} I believe my grade equivalent to course work evidenced below to be an A.
 
 [**Learning Objective Evidence:**]{.underline} In the code chunks below, provide code from Lab or Challenge assignments where you believe you have demonstrated proficiency with the specified learning target. Be sure to specify **where** the code came from (e.g., Lab 4 Question 2).
 
@@ -42,7 +42,14 @@ surveys <- read_csv(here::here("Week 3", "Lab 3", "teacher_evals.csv"))
 
 ```{r}
 #| label: wd-1-xlsx
+#PA 4 Question 1
 
+military <- read_xlsx("gov_spending_per_capita.xlsx",
+                      sheet = "Share of Govt. spending",
+                      skip  = 7,
+                      n_max = 190,
+                      na = c(". .", "xxx", "..")
+                      )
 ```
 
 **WD-2: I can select necessary columns from a dataset.**
@@ -81,7 +88,7 @@ crime_info
 # Lab 4 Question 7
 # Your Comments: Nice work pivoting and modifying the age variable!Nice work reordering your legend and your facets!!! I strongly recommend against nested functions, as they are difficult for people to understand what your code is doing. Having two lines is not less efficient and is more readable. Can you relevel the ages BEFORE your facet them? Can you match my colors??? These are coming from a package and you will need to expand the color palette to get all 10 colors.
 
-#REVISION: I removed the nested function of facet_grid(~factor(age_group)) and turned it into simply facet_grid(~age_group), and I defined age group earlier in the pipeline using a fct_relevel, which I used this source to remind myself. https://forcats.tidyverse.org/reference/fct_relevel.html#ref-examples. I learned in challenge 4 how to show every year on the x axis, but I didn't know how to skip years like your graph so I just tilted the labels so you can read them all. Using information from the discord I learned how to import a color palette and expand it, and then assign the colors to my plot with scale_color_manual()
+#REVISION: I removed the nested function of facet_grid(~factor(age_group)) and turned it into simply facet_grid(~age_group), and I defined age group earlier in the pipeline using a fct_relevel, which I used this source to remind myself. https://forcats.tidyverse.org/reference/fct_relevel.html#ref-examples. I learned in challenge 4 how to show every year on the x axis, but I didn't know how to skip years like your graph so I just tilted the labels so you can read them all. Using information from the discord I learned how to import a color palette and expand it, and then assign the colors to my plot with scale_color_manual(). Then I made the legend smaller and I used doge to alternate the year axis labels, I think skipping every other one would look better in this scenario but I thought it was a cool skill I learned so I wanted to show it.
 
 my_colors = colorRampPalette(brewer.pal(7, "Accent"))(10)
 graph_maker <- ca_childcare |>
@@ -101,13 +108,17 @@ ggplot(data = graph_maker,
   geom_point() +
   geom_smooth() +
   theme_bw() +
-  theme(aspect.ratio = 1, axis.text.x = element_text(size = 5, angle = 45, hjust = 1)) +
+  theme(aspect.ratio = 1, axis.text.x = element_text(size = 5),
+        legend.text = element_text(size = 7),
+        legend.title = element_text(size = 10),
+        legend.key.size = unit(10, "pt")) +
   scale_color_manual(values = my_colors) +
   labs(
     title = "Weekly Median Price for Center-Based Childcare ($)",
     x = "Study Year", y = "", color = "California Region") +
   facet_grid(~ age_group) +
-  scale_x_continuous(breaks = unique(graph_maker$study_year))
+  scale_x_continuous(breaks = unique(graph_maker$study_year),
+                     guide = guide_axis(n.dodge = 2))
 ```
 
 **WD-3: I can filter rows from a dataframe for a *variety* of data types (e.g., numeric, integer, character, factor, date).**
@@ -165,9 +176,9 @@ clean_data <- counties |>
   left_join(childcare_costs, join_by(county_fips_code)) |>
   filter(state_name == "California") |>
   group_by(study_year) |>
-  summarise(mcsa = median(mcsa, na.rm = TRUE), 
-            mfccsa = median(mfccsa, na.rm = TRUE), 
-            mhi_2018 = median(mhi_2018, na.rm = TRUE)) |>
+  summarise(across(
+      .cols = c(mcsa, mfccsa, mhi_2018), 
+      ~median(.x, na.rm = TRUE))) |>
   select(study_year, mcsa, mfccsa, mhi_2018)
 ```
 
@@ -272,7 +283,7 @@ ca_childcare <- ca_childcare |>
 # My title was also wrong, it said trends in childcare cost and weekly income. I had thought about doing weekly income but chose to just do median income, and I forgot to change the title. I then learned how to put my y axis in dollars. The variables were also sorted by alphabetical order by default and when I changed the titles around I didn't like the order so I used fct_revel.
 #Also, because I removed the legend, I put the graphs side by side and adjusted the aspect ratio, then turned the numbers sideways and make them smaller to not overlap. I think I looks a lot more clean like this.
 #I also changed the colors to make it more engaging. 
-#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray.
+#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray. Then I removed every other year so that you could read all the labels horizontally and not have to turn your head. I also changed label dollar to label currency.
 
 plot <- clean_data |>
   rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
@@ -285,16 +296,18 @@ plot <- clean_data |>
 
 ggplot(plot, aes(study_year, value, color = Variable)) +
   geom_line() +
-  scale_y_continuous(labels = label_dollar()) +
+  scale_y_continuous(labels = label_currency()) +
   labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
   facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
   theme_linedraw() +
-  scale_x_continuous(breaks = unique(plot$study_year)) +
+  scale_x_continuous(breaks = seq(min(plot$study_year),
+                                max(plot$study_year),
+                                by = 2)) +
   theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
         plot.subtitle = element_text(size = 10),
         legend.position = "none",
         aspect.ratio = 0.9,
-        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+        axis.text.x = element_text(size = 7)) +
   scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
@@ -302,20 +315,40 @@ ggplot(plot, aes(study_year, value, color = Variable)) +
 
 ```{r}
 #| label: wd-4-string
-# Lab 4 Question 4
+#Lab 4 Question 7
+# Your Comments: Nice work pivoting and modifying the age variable!Nice work reordering your legend and your facets!!! I strongly recommend against nested functions, as they are difficult for people to understand what your code is doing. Having two lines is not less efficient and is more readable. Can you relevel the ages BEFORE your facet them? Can you match my colors??? These are coming from a package and you will need to expand the color palette to get all 10 colors.
 
-ca_childcare <- ca_childcare |> 
-  mutate(county_name = str_remove(county_name, " County"),
-         census_region = fct_collapse(county_name, "Superior Counties" = superior_counties,
-                                                    "North Coast Counties" = north_coast_counties,
-                                                    "San Fancisco Counties" = san_fran_counties,
-                                                    "North San Joaquin Valley Counties" = n_san_joaquin_counties,
-                                                    "Central Coast Counties" = central_coast_counties,
-                                                    "South San Joaquin Valley Counties" = s_san_joaquin_counties,
-                                                    "Inland Counties" = inland_counties,
-                                                    "Los Angeles County" = la_county,
-                                                    "Orange County" = orange_county,
-                                                    "San Diego and Imperial County" = san_diego_imperial_counties))
+#REVISION: I removed the nested function of facet_grid(~factor(age_group)) and turned it into simply facet_grid(~age_group), and I defined age group earlier in the pipeline using a fct_relevel, which I used this source to remind myself. https://forcats.tidyverse.org/reference/fct_relevel.html#ref-examples. I learned in challenge 4 how to show every year on the x axis, but I didn't know how to skip years like your graph so I just tilted the labels so you can read them all. Using information from the discord I learned how to import a color palette and expand it, and then assign the colors to my plot with scale_color_manual(). Then I made the legend smaller and I used doge to alternate the year axis labels, I think skipping every other one would look better in this scenario but I thought it was a cool skill I learned so I wanted to show it.
+
+my_colors = colorRampPalette(brewer.pal(7, "Accent"))(10)
+graph_maker <- ca_childcare |>
+  select(census_region, study_year, starts_with("mc_")) |>
+  pivot_longer(cols = c(mc_infant, mc_toddler, mc_preschool),
+               names_to = "age_group",
+               values_to = "monthly_cost") |>
+  mutate(age_group = fct_recode(age_group,
+                                "Infant" = "mc_infant",
+                                "Toddler" = "mc_toddler",
+                                "Preschool" = "mc_preschool"), 
+         age_group = fct_relevel(age_group, "Infant", "Toddler", "Preschool")
+         )
+ggplot(data = graph_maker, 
+       mapping = aes(x = study_year, y = monthly_cost,
+                     color = fct_reorder2(.f = census_region, .x = study_year, .y = monthly_cost))) +
+  geom_point() +
+  geom_smooth() +
+  theme_bw() +
+  theme(aspect.ratio = 1, axis.text.x = element_text(size = 5),
+        legend.text = element_text(size = 7),
+        legend.title = element_text(size = 10),
+        legend.key.size = unit(10, "pt")) +
+  scale_color_manual(values = my_colors) +
+  labs(
+    title = "Weekly Median Price for Center-Based Childcare ($)",
+    x = "Study Year", y = "", color = "California Region") +
+  facet_grid(~ age_group) +
+  scale_x_continuous(breaks = unique(graph_maker$study_year),
+                     guide = guide_axis(n.dodge = 2))
 ```
 
 -   Date (example must use functions from **lubridate**)
@@ -386,9 +419,9 @@ clean_data <- counties |>
   left_join(childcare_costs, join_by(county_fips_code)) |>
   filter(state_name == "California") |>
   group_by(study_year) |>
-  summarise(mcsa = median(mcsa, na.rm = TRUE), 
-            mfccsa = median(mfccsa, na.rm = TRUE), 
-            mhi_2018 = median(mhi_2018, na.rm = TRUE)) |>
+  summarise(across(
+      .cols = c(mcsa, mfccsa, mhi_2018), 
+      ~median(.x, na.rm = TRUE))) |>
   select(study_year, mcsa, mfccsa, mhi_2018)
 ```
 
@@ -431,14 +464,56 @@ ca_childcare <- counties |>
 
 ```{r}
 #| label: wd-6-semi
+#Lab 5 Chunk 7
+#REVISION: I changed up this code chunk to use semi join and anti join, the semi join is to make sure the suspect has been to the symphony at least three times in December 2017. The anti join is to make sure they are not in the police interview dataset. I know I saved a lot of objects here but that's the only way I could figure out how to do it without a big nested semi join with lots of functions inside of it. 
 
+final_suspects <- almost_everything_data |>
+  filter(car_make == "Tesla", 
+         car_model == "Model S",
+         hair_color == "red",
+         gender == "female")
+
+goes_to_symphony <- facebook_event_checkin |>
+  mutate(date = ymd(date)) |>
+  filter(event_name == "SQL Symphony Concert",
+         year(date) == 2017,
+         month(date) == 12) |>
+  count(person_id) |>
+  filter(n >= 3)
+
+final_suspect <- final_suspects |>
+  semi_join(goes_to_symphony, by = c("id" = "person_id")) |>
+    anti_join(interview, by = c("id" = "person_id")) |>
+    pull(name)
+final_suspect
 ```
 
 -   `anti_join()`
 
 ```{r}
 #| label: wd-6-anti
+#Lab 5 Chunk 7
+#REVISION: I changed up this code chunk to use semi join and anti join, the semi join is to make sure the suspect has been to the symphony at least three times in December 2017. The anti join is to make sure they are not in the police interview dataset. I know I saved a lot of objects here but that's the only way I could figure out how to do it without a big nested semi join with lots of functions inside of it. 
 
+final_suspects <- almost_everything_data |>
+  filter(car_make == "Tesla", 
+         car_model == "Model S",
+         hair_color == "red",
+         gender == "female")
+
+goes_to_symphony <- facebook_event_checkin |>
+  mutate(date = ymd(date)) |>
+  filter(event_name == "SQL Symphony Concert",
+         year(date) == 2017,
+         month(date) == 12) |>
+  count(person_id) |>
+  filter(n >= 3)
+
+final_suspect <- final_suspects |>
+  semi_join(goes_to_symphony, by = c("id" = "person_id")) |>
+    anti_join(interview, by = c("id" = "person_id")) |>
+    pull(name)
+final_suspect
 ```
 
 **WD-7: I can pivot dataframes from long to wide and visa versa**
@@ -454,7 +529,7 @@ ca_childcare <- counties |>
 # My title was also wrong, it said trends in childcare cost and weekly income. I had thought about doing weekly income but chose to just do median income, and I forgot to change the title. I then learned how to put my y axis in dollars. The variables were also sorted by alphabetical order by default and when I changed the titles around I didn't like the order so I used fct_revel.
 #Also, because I removed the legend, I put the graphs side by side and adjusted the aspect ratio, then turned the numbers sideways and make them smaller to not overlap. I think I looks a lot more clean like this.
 #I also changed the colors to make it more engaging. 
-#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray.
+#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray. Then I removed every other year so that you could read all the labels horizontally and not have to turn your head. I also changed label dollar to label currency.
 
 plot <- clean_data |>
   rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
@@ -467,16 +542,18 @@ plot <- clean_data |>
 
 ggplot(plot, aes(study_year, value, color = Variable)) +
   geom_line() +
-  scale_y_continuous(labels = label_dollar()) +
+  scale_y_continuous(labels = label_currency()) +
   labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
   facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
   theme_linedraw() +
-  scale_x_continuous(breaks = unique(plot$study_year)) +
+  scale_x_continuous(breaks = seq(min(plot$study_year),
+                                max(plot$study_year),
+                                by = 2)) +
   theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
         plot.subtitle = element_text(size = 10),
         legend.position = "none",
         aspect.ratio = 0.9,
-        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+        axis.text.x = element_text(size = 7)) +
   scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
@@ -484,18 +561,20 @@ ggplot(plot, aes(study_year, value, color = Variable)) +
 
 ```{r}
 #| label: wd-7-wide
-# Challenge 4 Chunk4
+# Lab 4 Question 5
+#Your comments: I would recommend using the %in% operator instead of the or!
+#Notice that your table still has a grouping variable! Because you grouped by **two** variables, your first group was not dropped!
+#Can you give your column names better titles, so the reader knows what "2008" and "2018" represent? What are the values stored in these columns?
+#REVISION: I changed the filter from using or to using %in%, I also added a prefix median_income_ to the column names to make them more descriptive. Then ungrouped the data at the end
 
-options(width = 200)
-clean_data |>
-  rename('Center Based Care Price' = mcsa,
-         'Family Based Care Price' = mfccsa,
-         'Median Income' = mhi_2018) |>
-  pivot_longer(cols = c('Center Based Care Price', 'Family Based Care Price', 'Median Income'),
-               names_to = "Variable", 
-               values_to = "value") |>
-  pivot_wider(names_from = study_year, values_from = value) |>
-  as.data.frame()
+ca_childcare |>
+  filter(study_year %in% c(2008, 2018)) |>
+  group_by(census_region, study_year) |>
+  summarize(median_income = median(mhi_2018, na.rm = TRUE)) |>
+  select(census_region, study_year, median_income) |>
+  pivot_wider(names_from = study_year, values_from = median_income, names_prefix = "median_income_") |>
+  arrange(desc(median_income_2018)) |>
+  ungroup()
 
 ```
 
@@ -506,10 +585,10 @@ clean_data |>
 The following assignments satisfy the above criteria:
 
 -   Challenge 4
--   Lab 2
+-   Challenge 7
 -   Challenge 2
 -   Challenge 3
--   Lab 1
+-   Lab 7
 
 **R-2: I can write well documented and tidy code.**
 
@@ -524,7 +603,7 @@ The following assignments satisfy the above criteria:
 # My title was also wrong, it said trends in childcare cost and weekly income. I had thought about doing weekly income but chose to just do median income, and I forgot to change the title. I then learned how to put my y axis in dollars. The variables were also sorted by alphabetical order by default and when I changed the titles around I didn't like the order so I used fct_revel.
 #Also, because I removed the legend, I put the graphs side by side and adjusted the aspect ratio, then turned the numbers sideways and make them smaller to not overlap. I think I looks a lot more clean like this.
 #I also changed the colors to make it more engaging. 
-#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray.
+#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray. Then I removed every other year so that you could read all the labels horizontally and not have to turn your head. I also changed label dollar to label currency.
 
 plot <- clean_data |>
   rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
@@ -537,19 +616,18 @@ plot <- clean_data |>
 
 ggplot(plot, aes(study_year, value, color = Variable)) +
   geom_line() +
-  scale_y_continuous(labels = label_dollar()) +
-  labs(x = "Year", 
-       y = "", 
-       title = "Trends in Childcare Cost and Median Income", 
-       subtitle = "Measurments in US Dollars") +
+  scale_y_continuous(labels = label_currency()) +
+  labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
   facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
   theme_linedraw() +
-  scale_x_continuous(breaks = unique(plot$study_year)) +
+  scale_x_continuous(breaks = seq(min(plot$study_year),
+                                max(plot$study_year),
+                                by = 2)) +
   theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
         plot.subtitle = element_text(size = 10),
         legend.position = "none",
         aspect.ratio = 0.9,
-        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+        axis.text.x = element_text(size = 7)) +
   scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
@@ -563,9 +641,9 @@ clean_data <- counties |>
   left_join(childcare_costs, join_by(county_fips_code)) |>
   filter(state_name == "California") |>
   group_by(study_year) |>
-  summarise(mcsa = median(mcsa, na.rm = TRUE), 
-            mfccsa = median(mfccsa, na.rm = TRUE), 
-            mhi_2018 = median(mhi_2018, na.rm = TRUE)) |>
+  summarise(across(
+      .cols = c(mcsa, mfccsa, mhi_2018), 
+      ~median(.x, na.rm = TRUE))) |>
   select(study_year, mcsa, mfccsa, mhi_2018)
 ```
 
@@ -573,7 +651,25 @@ clean_data <- counties |>
 
 ```{r}
 #| label: r-2-3
+#Lab 8 Question 3
+#Your Comments: It looks like you are doing the same process to both of your axis labels. Time for a helper function!
+#Can you give your plotting function a better name? What does the function do?
+#REVISIONS: I renamed the function to make_scatterplot because this is what it does. Then I made a helper function make_title so that just need to call that function within my make_scatterplot function instead of writing the whole str_to_title thing twice.
 
+make_title <- function(str){
+  str_to_title(str_replace_all(as_label(enquo(str)), "_", " "))
+}
+
+make_scatterplot <- function(df, xvar, yvar){
+  xlabel <- make_title({{xvar}})
+  ylabel <- make_title({{yvar}})
+  label <- rlang::englue("A Scatterplot of {xlabel} and {ylabel}")
+  df |>
+    ggplot(aes(x = {{xvar}}, y = {{yvar}}, color = {{xvar}})) +
+    geom_point() +
+    theme(legend.position = "none") +
+    labs(x = xlabel, subtitle = ylabel, y = "", title = label)
+}
 ```
 
 **R-3: I can write robust programs that are resistant to changes in inputs.**
@@ -582,6 +678,20 @@ clean_data <- counties |>
 
 ```{r}
 #| label: r-3-example
+#Lab 8 Question 2
+#Your comments: Input checks for data frame functions are tricky, but an easy one is to check if the data frame being input is actually a data frame (not a vector or a matrix).
+#REVISIONS: I added a data frame check
+pivot_table <- function(df, rows, cols){
+  if(!is.data.frame(df)) {
+    stop("input df is not a dataframe")
+  }
+  df|>
+    count({{rows}}, {{cols}}) |>
+    pivot_wider(names_from = {{ cols }},
+                values_from = n,
+                values_fill = 0) |>
+    janitor::adorn_totals(where = c("row", "col"))
+}
 
 ```
 
@@ -589,7 +699,28 @@ clean_data <- counties |>
 
 ```{r}
 #| label: r-3-function-stops
+#Lab 8 Question 1
+#Your comments: This code works but doesn’t use the most current code formatting for across()! Could you used named arguments? Could you incorporate the ~ and .x into the rescale_01() function?
+#Input checks for data frame functions are tricky, but an easy one is to check if the data frame being input is actually a data frame (not a vector or a matrix).
+#REVISIONS: I added named functions for .cols and .fns and I used ~ and .x. Then I added a is.data.frame check where it stops if it isnt a dataframe.
 
+rescale_01 <- function(vec){
+  stopifnot(is.numeric(vec))
+  if(any(vec < 1, na.rm = TRUE)){
+    stop("Input value must be greater than one")}
+  r <- range(vec, na.rm = TRUE)
+  (vec - r[1])/
+    (r[2] - r[1])
+}
+rescale_column <- function(df, cols){
+  if(!is.data.frame(df)) {
+    stop("input df is not a dataframe")
+  }
+  df |>
+    mutate(across(
+      .cols = {{cols}}, 
+      .fns = ~ rescale_01(.x)))
+}
 ```
 
 ## Data Visualization & Summarization
@@ -601,6 +732,7 @@ clean_data <- counties |>
 ```{r}
 #| label: dvs-1-num
 # Lab 4 Question 8
+# REVISIONS: I added label currency to both axes
 
 scatterplot <- ca_childcare |>
   select(mc_infant, mhi_2018)
@@ -608,7 +740,9 @@ ggplot(data = scatterplot, mapping = aes(x = mhi_2018, y = mc_infant)) +
   geom_point()+
   theme_bw() +
   labs(x = "Median Household Income", y = "Infant Childcare Cost") +
-  geom_smooth(method ='lm', formula = y~x)
+  geom_smooth(method ='lm', formula = y~x) +
+  scale_x_continuous(labels = label_currency()) +
+  scale_y_continuous(labels = label_currency())
 ```
 
 -   At least one numeric variable and one categorical variable
@@ -616,13 +750,14 @@ ggplot(data = scatterplot, mapping = aes(x = mhi_2018, y = mc_infant)) +
 ```{r}
 #| label: dvs-2-num-cat
 # Lab 2 Problem 8
+#REVISION: I used doge instead of doing the 45 degree tilt
 
 ggplot(data = surveys,
        mapping = aes(x = species, y = weight)) +
   geom_boxplot(outliers = FALSE) +
   geom_jitter(height = 0, width = 0.3, alpha = 0.25, color = "steelblue") +
   labs(x = "Species of Animal", y = "Weight (Grams)", title = "Animal Weight by Species") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  scale_x_discrete(guide = guide_axis(n.dodge = 2))
 ```
 
 -   At least two categorical variables
@@ -630,6 +765,9 @@ ggplot(data = surveys,
 ```{r}
 #| label: dvs-2-cat
 # Challenge 3 Question 2
+#Your comments: Incredible work! Nice job matching the colors, the percentage labels, and the legend position!
+#Technically, the percent() function has been superseded. Meaning, there are other functions you should use instead. #Specifically, the  label_percent() function has replaced this function.
+#REVISION: I used label_percent instead of scales::percent
 
 ggplot(data = teacher_evals_compare,
        mapping = aes(x = sen_level, fill = SET_level)) +
@@ -638,7 +776,7 @@ ggplot(data = teacher_evals_compare,
     title = "Evaluation of Teachers' Use of Activities",
     x = "Years of Experience", y = "", fill = "Evaluation Rating"
   ) +
-  scale_y_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = label_percent()) +
   theme_bw() +
   theme(legend.position = "top") +
   scale_fill_manual(values = c("excellent" = "#c77cff", "standard" = "#cd9600"))
@@ -655,7 +793,7 @@ ggplot(data = teacher_evals_compare,
 # My title was also wrong, it said trends in childcare cost and weekly income. I had thought about doing weekly income but chose to just do median income, and I forgot to change the title. I then learned how to put my y axis in dollars. The variables were also sorted by alphabetical order by default and when I changed the titles around I didn't like the order so I used fct_revel.
 #Also, because I removed the legend, I put the graphs side by side and adjusted the aspect ratio, then turned the numbers sideways and make them smaller to not overlap. I think I looks a lot more clean like this.
 #I also changed the colors to make it more engaging. 
-#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray.
+#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray. Then I removed every other year so that you could read all the labels horizontally and not have to turn your head. I also changed label dollar to label currency.
 
 plot <- clean_data |>
   rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
@@ -668,19 +806,18 @@ plot <- clean_data |>
 
 ggplot(plot, aes(study_year, value, color = Variable)) +
   geom_line() +
-  scale_y_continuous(labels = label_dollar()) +
-  labs(x = "Year", 
-       y = "", 
-       title = "Trends in Childcare Cost and Median Income", 
-       subtitle = "Measurments in US Dollars") +
+  scale_y_continuous(labels = label_currency()) +
+  labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
   facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
   theme_linedraw() +
-  scale_x_continuous(breaks = unique(plot$study_year)) +
+  scale_x_continuous(breaks = seq(min(plot$study_year),
+                                max(plot$study_year),
+                                by = 2)) +
   theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
         plot.subtitle = element_text(size = 10),
         legend.position = "none",
         aspect.ratio = 0.9,
-        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+        axis.text.x = element_text(size = 7)) +
   scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
@@ -697,7 +834,7 @@ ggplot(plot, aes(study_year, value, color = Variable)) +
 # My title was also wrong, it said trends in childcare cost and weekly income. I had thought about doing weekly income but chose to just do median income, and I forgot to change the title. I then learned how to put my y axis in dollars. The variables were also sorted by alphabetical order by default and when I changed the titles around I didn't like the order so I used fct_revel.
 #Also, because I removed the legend, I put the graphs side by side and adjusted the aspect ratio, then turned the numbers sideways and make them smaller to not overlap. I think I looks a lot more clean like this.
 #I also changed the colors to make it more engaging. 
-#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray.
+#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray. Then I removed every other year so that you could read all the labels horizontally and not have to turn your head. I also changed label dollar to label currency.
 
 plot <- clean_data |>
   rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
@@ -710,16 +847,18 @@ plot <- clean_data |>
 
 ggplot(plot, aes(study_year, value, color = Variable)) +
   geom_line() +
-  scale_y_continuous(labels = label_dollar()) +
+  scale_y_continuous(labels = label_currency()) +
   labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
   facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
   theme_linedraw() +
-  scale_x_continuous(breaks = unique(plot$study_year)) +
+  scale_x_continuous(breaks = seq(min(plot$study_year),
+                                max(plot$study_year),
+                                by = 2)) +
   theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
         plot.subtitle = element_text(size = 10),
         legend.position = "none",
         aspect.ratio = 0.9,
-        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+        axis.text.x = element_text(size = 7)) +
   scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
@@ -734,7 +873,7 @@ ggplot(plot, aes(study_year, value, color = Variable)) +
 # My title was also wrong, it said trends in childcare cost and weekly income. I had thought about doing weekly income but chose to just do median income, and I forgot to change the title. I then learned how to put my y axis in dollars. The variables were also sorted by alphabetical order by default and when I changed the titles around I didn't like the order so I used fct_revel.
 #Also, because I removed the legend, I put the graphs side by side and adjusted the aspect ratio, then turned the numbers sideways and make them smaller to not overlap. I think I looks a lot more clean like this.
 #I also changed the colors to make it more engaging. 
-#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray.
+#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray. Then I removed every other year so that you could read all the labels horizontally and not have to turn your head. I also changed label dollar to label currency.
 
 plot <- clean_data |>
   rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
@@ -747,16 +886,18 @@ plot <- clean_data |>
 
 ggplot(plot, aes(study_year, value, color = Variable)) +
   geom_line() +
-  scale_y_continuous(labels = label_dollar()) +
+  scale_y_continuous(labels = label_currency()) +
   labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
   facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
   theme_linedraw() +
-  scale_x_continuous(breaks = unique(plot$study_year)) +
+  scale_x_continuous(breaks = seq(min(plot$study_year),
+                                max(plot$study_year),
+                                by = 2)) +
   theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
         plot.subtitle = element_text(size = 10),
         legend.position = "none",
         aspect.ratio = 0.9,
-        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+        axis.text.x = element_text(size = 7)) +
   scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
@@ -770,8 +911,8 @@ ggplot(plot, aes(study_year, value, color = Variable)) +
 # I moved the Y axis to the subtitle to make it so you don't have to read vertical writing, then I made the font smaller than the title, and make the title bold with a gap underneath so it is more distinct what is the title vs subtitle. Then I removed the key header because it said weekly cost but that didn't make sense because Median Income is a variable that is not a weekly value.
 # My title was also wrong, it said trends in childcare cost and weekly income. I had thought about doing weekly income but chose to just do median income, and I forgot to change the title. I then learned how to put my y axis in dollars. The variables were also sorted by alphabetical order by default and when I changed the titles around I didn't like the order so I used fct_revel.
 #Also, because I removed the legend, I put the graphs side by side and adjusted the aspect ratio, then turned the numbers sideways and make them smaller to not overlap. I think I looks a lot more clean like this.
-#I also changed the colors to make it more engaging. 
-#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray.
+#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray. Then I removed every other year so that you could read all the labels horizontally and not have to turn your head. I also changed label dollar to label currency.
+#NEW REVISION: I looked up and found the Okabe-Ito palette which is known for being color blind friendly, and I copied some of the hex codes for three of the colors that look very different even with the color blind filter on.
 
 plot <- clean_data |>
   rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
@@ -784,17 +925,19 @@ plot <- clean_data |>
 
 ggplot(plot, aes(study_year, value, color = Variable)) +
   geom_line() +
-  scale_y_continuous(labels = label_dollar()) +
+  scale_y_continuous(labels = label_currency()) +
   labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
   facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
   theme_linedraw() +
-  scale_x_continuous(breaks = unique(plot$study_year)) +
+  scale_x_continuous(breaks = seq(min(plot$study_year),
+                                max(plot$study_year),
+                                by = 2)) +
   theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
         plot.subtitle = element_text(size = 10),
         legend.position = "none",
         aspect.ratio = 0.9,
-        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
-  scale_color_manual(values = c("orange", "coral1", "steelblue2"))
+        axis.text.x = element_text(size = 7)) +
+  scale_color_manual(values = c("#CC79A7", "#0072B2", "#E69F00"))
 ```
 
 -   I can modify the text in my plot to be more readable
@@ -808,7 +951,7 @@ ggplot(plot, aes(study_year, value, color = Variable)) +
 # My title was also wrong, it said trends in childcare cost and weekly income. I had thought about doing weekly income but chose to just do median income, and I forgot to change the title. I then learned how to put my y axis in dollars. The variables were also sorted by alphabetical order by default and when I changed the titles around I didn't like the order so I used fct_revel.
 #Also, because I removed the legend, I put the graphs side by side and adjusted the aspect ratio, then turned the numbers sideways and make them smaller to not overlap. I think I looks a lot more clean like this.
 #I also changed the colors to make it more engaging. 
-#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray.
+#I also experimented with a lot of plot themes and I liked the linedraw one a lot, I like how the back boxes look instead of gray. Then I removed every other year so that you could read all the labels horizontally and not have to turn your head. I also changed label dollar to label currency.
 
 plot <- clean_data |>
   rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
@@ -821,16 +964,18 @@ plot <- clean_data |>
 
 ggplot(plot, aes(study_year, value, color = Variable)) +
   geom_line() +
-  scale_y_continuous(labels = label_dollar()) +
+  scale_y_continuous(labels = label_currency()) +
   labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
   facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
   theme_linedraw() +
-  scale_x_continuous(breaks = unique(plot$study_year)) +
+  scale_x_continuous(breaks = seq(min(plot$study_year),
+                                max(plot$study_year),
+                                by = 2)) +
   theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
         plot.subtitle = element_text(size = 10),
         legend.position = "none",
         aspect.ratio = 0.9,
-        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
+        axis.text.x = element_text(size = 7)) +
   scale_color_manual(values = c("orange", "coral1", "steelblue2"))
 ```
 
@@ -841,7 +986,7 @@ ggplot(plot, aes(study_year, value, color = Variable)) +
 #Lab 4 Question 7
 # Your Comments: Nice work pivoting and modifying the age variable!Nice work reordering your legend and your facets!!! I strongly recommend against nested functions, as they are difficult for people to understand what your code is doing. Having two lines is not less efficient and is more readable. Can you relevel the ages BEFORE your facet them? Can you match my colors??? These are coming from a package and you will need to expand the color palette to get all 10 colors.
 
-#REVISION: I removed the nested function of facet_grid(~factor(age_group)) and turned it into simply facet_grid(~age_group), and I defined age group earlier in the pipeline using a fct_relevel, which I used this source to remind myself. https://forcats.tidyverse.org/reference/fct_relevel.html#ref-examples. I learned in challenge 4 how to show every year on the x axis, but I didn't know how to skip years like your graph so I just tilted the labels so you can read them all. Using information from the discord I learned how to import a color palette and expand it, and then assign the colors to my plot with scale_color_manual()
+#REVISION: I removed the nested function of facet_grid(~factor(age_group)) and turned it into simply facet_grid(~age_group), and I defined age group earlier in the pipeline using a fct_relevel, which I used this source to remind myself. https://forcats.tidyverse.org/reference/fct_relevel.html#ref-examples. I learned in challenge 4 how to show every year on the x axis, but I didn't know how to skip years like your graph so I just tilted the labels so you can read them all. Using information from the discord I learned how to import a color palette and expand it, and then assign the colors to my plot with scale_color_manual(). Then I made the legend smaller and I used doge to alternate the year axis labels, I think skipping every other one would look better in this scenario but I thought it was a cool skill I learned so I wanted to show it.
 
 my_colors = colorRampPalette(brewer.pal(7, "Accent"))(10)
 graph_maker <- ca_childcare |>
@@ -861,13 +1006,17 @@ ggplot(data = graph_maker,
   geom_point() +
   geom_smooth() +
   theme_bw() +
-  theme(aspect.ratio = 1, axis.text.x = element_text(size = 5, angle = 45, hjust = 1)) +
+  theme(aspect.ratio = 1, axis.text.x = element_text(size = 5),
+        legend.text = element_text(size = 7),
+        legend.title = element_text(size = 10),
+        legend.key.size = unit(10, "pt")) +
   scale_color_manual(values = my_colors) +
   labs(
     title = "Weekly Median Price for Center-Based Childcare ($)",
     x = "Study Year", y = "", color = "California Region") +
   facet_grid(~ age_group) +
-  scale_x_continuous(breaks = unique(graph_maker$study_year))
+  scale_x_continuous(breaks = unique(graph_maker$study_year),
+                     guide = guide_axis(n.dodge = 2))
 ```
 
 **DVS-3: I show creativity in my visualizations**
@@ -879,7 +1028,7 @@ ggplot(data = graph_maker,
 #Lab 4 Question 7
 # Your Comments: Nice work pivoting and modifying the age variable!Nice work reordering your legend and your facets!!! I strongly recommend against nested functions, as they are difficult for people to understand what your code is doing. Having two lines is not less efficient and is more readable. Can you relevel the ages BEFORE your facet them? Can you match my colors??? These are coming from a package and you will need to expand the color palette to get all 10 colors.
 
-#REVISION: I removed the nested function of facet_grid(~factor(age_group)) and turned it into simply facet_grid(~age_group), and I defined age group earlier in the pipeline using a fct_relevel, which I used this source to remind myself. https://forcats.tidyverse.org/reference/fct_relevel.html#ref-examples. I learned in challenge 4 how to show every year on the x axis, but I didn't know how to skip years like your graph so I just tilted the labels so you can read them all. Using information from the discord I learned how to import a color palette and expand it, and then assign the colors to my plot with scale_color_manual()
+#REVISION: I removed the nested function of facet_grid(~factor(age_group)) and turned it into simply facet_grid(~age_group), and I defined age group earlier in the pipeline using a fct_relevel, which I used this source to remind myself. https://forcats.tidyverse.org/reference/fct_relevel.html#ref-examples. I learned in challenge 4 how to show every year on the x axis, but I didn't know how to skip years like your graph so I just tilted the labels so you can read them all. Using information from the discord I learned how to import a color palette and expand it, and then assign the colors to my plot with scale_color_manual(). Then I made the legend smaller and I used doge to alternate the year axis labels, I think skipping every other one would look better in this scenario but I thought it was a cool skill I learned so I wanted to show it.
 
 my_colors = colorRampPalette(brewer.pal(7, "Accent"))(10)
 graph_maker <- ca_childcare |>
@@ -899,13 +1048,17 @@ ggplot(data = graph_maker,
   geom_point() +
   geom_smooth() +
   theme_bw() +
-  theme(aspect.ratio = 1, axis.text.x = element_text(size = 5, angle = 45, hjust = 1)) +
+  theme(aspect.ratio = 1, axis.text.x = element_text(size = 5),
+        legend.text = element_text(size = 7),
+        legend.title = element_text(size = 10),
+        legend.key.size = unit(10, "pt")) +
   scale_color_manual(values = my_colors) +
   labs(
     title = "Weekly Median Price for Center-Based Childcare ($)",
     x = "Study Year", y = "", color = "California Region") +
   facet_grid(~ age_group) +
-  scale_x_continuous(breaks = unique(graph_maker$study_year))
+  scale_x_continuous(breaks = unique(graph_maker$study_year),
+                     guide = guide_axis(n.dodge = 2))
 ```
 
 -   I can use non-standard colors (Example 2)
@@ -930,14 +1083,60 @@ ggplot(data = surveys,
 
 ```{r}
 #| label: dvs-3-2
+#Lab 10 Question 3
+#Your Comments: What is the context of these simulations? What does a “correct” assignment mean? What was assigned?
+#How many total babies could have been assigned? 4? 5? 6? That information should be included in you plot title!
+#How many simultations were run? That information should be included in your title!
+#REVISIONS: I changed the title and subtitle to be more descriptive, and then used geom_text to add the proportions over each bar.
 
+results |>
+  enframe() |>
+  count(value) |>
+  mutate(prop = n / sum(n)) |>
+  select(value, prop) |>
+  ggplot(aes(x = value, y = prop)) +
+  geom_col(fill = "green4") +
+  scale_y_continuous(labels = label_percent()) +
+  scale_x_continuous(breaks = 0:4, limits = c(-1,5)) +
+  theme_linedraw() +
+  labs(title = "Number of Baby and Mother Correct Matches out of 4 Pairs (10000 Simulations)", y = "", subtitle = "Proportion of 10000 simulations") +
+  geom_text(aes(label = percent(prop), y = prop + 0.01))
 ```
 
 -   I can choose creative geometries (e.g., `geom_segment()`, `geom_ribbon)()`)
 
 ```{r}
 #| label: dvs-3-3
+#Challenge 7 Question 5
+#REVISION: I added the geom_segment making a line from the first year of the study to the last, in this graph it doesn't show all that much but the goal would be to show an overall change in fish health from the first year to last year of the study.
 
+graph_data <- modified_fish |>
+  mutate(condition_index = conditionidx(weight, length)) |>
+  group_by(year, species) |>
+  summarize(average_condition_index = mean(condition_index, na.rm = TRUE), .groups = "drop")
+
+connecting_line_data <- graph_data |>
+   group_by(species) |>
+      arrange(year) |>
+      summarize(x1 = first(year),
+                x2 = last(year),
+                y1 = first(average_condition_index),
+                y2 = last(average_condition_index), 
+                .groups = "drop")
+
+  ggplot(data = graph_data, aes(x = year, y = average_condition_index, color = species)) +
+     geom_segment(data = connecting_line_data, aes(x = x1, y = y1,
+        xend = x2, yend = y2,
+        color = species),
+    linewidth = 0.55,
+    linetype = "dashed") +
+  geom_line() +
+  geom_point() +
+  geom_hline(aes(yintercept = 1)) +
+  theme_linedraw() +
+  facet_wrap(~species, nrow = 2) +
+  theme(legend.position = "none") +
+  labs(x = "Year", y = "", subtitle = "Condition Index", title = "Fish Health by Species")
 ```
 
 **DVS-4: I can calculate numerical summaries of variables.**
@@ -946,20 +1145,20 @@ ggplot(data = surveys,
 
 ```{r}
 #| label: dvs-4-summarize
-# Lab 4 Question 6
-# Your Comments: Notice that your table still has a grouping variable! Because you grouped by **two** variables, your first group was not dropped!
-#REVISION: I added a prefix to the column name to make it more descriprive, and then I ungrouped the data, and sliced the min so it only returns the minimum value for median infant childcare cost 2018.
+# Lab 10 Question 1
+#Your Comments: What tools have we learned in this class to select elements and summarize statistics?
+#REVISION: I changed it to add the summarize function and pipe in the dataframe before so I dont need to use the dollar sign to grab columns.
 
-Is there a function that allows you to slice the min of a specific variable?
-ca_childcare |>
-  filter(study_year == 2018) |>
-  group_by(census_region, study_year) |>
-  summarize(median_cost = median(mc_infant, na.rm = TRUE)) |>
-  select(census_region, study_year, median_cost) |>
-  pivot_wider(names_from = study_year, values_from = median_cost, names_prefix = "median_infant_childcare_cost_") |>
-  arrange(desc(median_infant_childcare_cost_2018)) |>
-  ungroup() |>
-  slice_min(order_by = median_infant_childcare_cost_2018, n = 1)
+randomBabies <- function(n_babies){
+  babies_data <- tibble(baby = 1:n_babies,
+                      mother = sample(1:n_babies, 
+                                      size = n_babies, 
+                                      replace = FALSE)
+                      )
+  babies_data |>
+    summarize(matches = sum(baby == mother)) |>
+    pull(matches)
+}
 ```
 
 -   Example using `across()`
@@ -990,9 +1189,9 @@ clean_data <- counties |>
   left_join(childcare_costs, join_by(county_fips_code)) |>
   filter(state_name == "California") |>
   group_by(study_year) |>
-  summarise(mcsa = median(mcsa, na.rm = TRUE), 
-            mfccsa = median(mfccsa, na.rm = TRUE), 
-            mhi_2018 = median(mhi_2018, na.rm = TRUE)) |>
+  summarise(across(
+      .cols = c(mcsa, mfccsa, mhi_2018), 
+      ~median(.x, na.rm = TRUE))) |>
   select(study_year, mcsa, mfccsa, mhi_2018)
 ```
 
@@ -1143,9 +1342,9 @@ clean_data <- counties |>
   left_join(childcare_costs, join_by(county_fips_code)) |>
   filter(state_name == "California") |>
   group_by(study_year) |>
-  summarise(mcsa = median(mcsa, na.rm = TRUE), 
-            mfccsa = median(mfccsa, na.rm = TRUE), 
-            mhi_2018 = median(mhi_2018, na.rm = TRUE)) |>
+  summarise(across(
+      .cols = c(mcsa, mfccsa, mhi_2018), 
+      ~median(.x, na.rm = TRUE))) |>
   select(study_year, mcsa, mfccsa, mhi_2018)
 ```
 
@@ -1169,7 +1368,15 @@ clean_data <- counties |>
 
 ```{r}
 #| label: pe-1-map-1
+#Lab 9 Question 7
 
+fish |>
+  map_int(.f = ~ sum(is.na(.x))) |>
+  enframe(name = "Variable",
+          value = "Missing Values") |>
+  kable() |>
+  kable_styling(full_width = FALSE,
+                bootstrap_options = "striped")
 ```
 
 **PE-2: I can write functions to reduce repetition in my code.**
@@ -1178,21 +1385,73 @@ clean_data <- counties |>
 
 ```{r}
 #| label: pe-2-1
+#Lab 8 Question 3
+#Your comments: It looks like you are doing the same process to both of your axis labels. Time for a helper function!
+#Can you give your plotting function a better name? What does the function do?
+#REVISIONS: I renamed the function to make_scatterplot because this is what it does. Then I made a helper function make_title so that just need to call that function within my make_scatterplot function instead of writing the whole str_to_title thing twice.
 
+make_title <- function(str){
+  str_to_title(str_replace_all(as_label(enquo(str)), "_", " "))
+}
+
+make_scatterplot <- function(df, xvar, yvar){
+  xlabel <- make_title({{xvar}})
+  ylabel <- make_title({{yvar}})
+  label <- rlang::englue("A Scatterplot of {xlabel} and {ylabel}")
+  df |>
+    ggplot(aes(x = {{xvar}}, y = {{yvar}}, color = {{xvar}})) +
+    geom_point() +
+    theme(legend.position = "none") +
+    labs(x = xlabel, subtitle = ylabel, y = "", title = label)
+}
 ```
 
 -   Example 2: Function that operates on data frames
 
 ```{r}
 #| label: pe-2-2
+# Lab 8 Question 2
+#Your Comments: Input checks for data frame functions are tricky, but an easy one is to check if the data frame being input is actually a data frame (not a vector or a matrix).
+#REVISIONS: I added a data frame check
 
+pivot_table <- function(df, rows, cols){
+  if(!is.data.frame(df)) {
+    stop("input df is not a dataframe")
+  }
+  df|>
+    count({{rows}}, {{cols}}) |>
+    pivot_wider(names_from = {{ cols }},
+                values_from = n,
+                values_fill = 0) |>
+    janitor::adorn_totals(where = c("row", "col"))
+}
 ```
 
 -   Example 3: Function that operates on vectors *or* data frames
 
 ```{r}
 #| label: pe-2-3
+#Lab 8 Question 1
+#Your Comments: Input checks for data frame functions are tricky, but an easy one is to check if the data frame being input is actually a data frame (not a vector or a matrix).
+#REVISIONS: I added named functions for .cols and .fns and I used ~ and .x. Then I added a is.data.frame check where it stops if it isnt a dataframe.
 
+rescale_01 <- function(vec){
+  stopifnot(is.numeric(vec))
+  if(any(vec < 1, na.rm = TRUE)){
+    stop("Input value must be greater than one")}
+  r <- range(vec, na.rm = TRUE)
+  (vec - r[1])/
+    (r[2] - r[1])
+}
+rescale_column <- function(df, cols){
+  if(!is.data.frame(df)) {
+    stop("input df is not a dataframe")
+  }
+  df |>
+    mutate(across(
+      .cols = {{cols}}, 
+      .fns = ~ rescale_01(.x)))
+}
 ```
 
 **PE-3:I can use iteration to reduce repetition in my code.**
@@ -1201,30 +1460,41 @@ clean_data <- counties |>
 
 ```{r}
 #| label: pe-3-across
-# Challenge 4 Chunk 3
+# Lab 7 Question 1
 
-clean_data <- counties |>
-  left_join(childcare_costs, join_by(county_fips_code)) |>
-  filter(state_name == "California") |>
-  group_by(study_year) |>
-  summarise(across(
-      .cols = c(mcsa, mfccsa, mhi_2018), 
-      ~median(.x, na.rm = TRUE))) |>
-  select(study_year, mcsa, mfccsa, mhi_2018)
+missing_values <- fish |>
+  summarize(
+    across(trip:species, ~sum(is.na(.)))
+  )
+missing_values
 ```
 
 -   using a `map()` function with **one** input (e.g., `map()`, `map_chr()`, `map_dbl()`, etc.)
 
 ```{r}
 #| label: pe-3-map-1
+#Lab 9 Question 7
 
+fish |>
+  map_int(.f = ~ sum(is.na(.x))) |>
+  enframe(name = "Variable",
+          value = "Missing Values") |>
+  kable() |>
+  kable_styling(full_width = FALSE,
+                bootstrap_options = "striped")
 ```
 
--   using a `map()` function with **more than one** input (e.g., `map_2()` or `pmap()`)
+-   using a `map()` function with **one** input (e.g., `map()`, `map_chr()`, `map_dbl()`, etc.)
 
 ```{r}
 #| label: pe-3-map-2
+#Lab 9 Question 2
 
+surveys |>
+  map_chr(.f = ~ class(.x)) |>
+  enframe(name = "Variable",
+          value = "Data Type") |>
+  kable()
 ```
 
 **PE-4: I can use modern tools when carrying out my analysis.**
@@ -1254,38 +1524,21 @@ ggplot(data = teacher_evals_compare,
 
 ```{r}
 #| label: pe-4-2
-# Challenge 4
+#Lab 7 Question 3
+#Your comments: I would still recommend recoding the trip variable before plotting, so the facets have more informative names like "Trip 1" instead of "1". You have a variety of tools you’ve learned that would be a good fit for this task -- if_else() or fct_recode() would be great places to start!
+#REVISION: I used factor recode to change the titles from 1 and 2 to trip 1 and trip 2. I had to use as.factor becuase it was saying the input cannot be a double. I also added more detail to the title so that it provides additional information for the viewer. Finally, I turned year into a factor and made the text smaller so the x axis would show every date.
 
-clean_data <- counties |>
-  left_join(childcare_costs, join_by(county_fips_code)) |>
-  filter(state_name == "California") |>
-  group_by(study_year) |>
-  summarise(mcsa = median(mcsa, na.rm = TRUE), 
-            mfccsa = median(mfccsa, na.rm = TRUE), 
-            mhi_2018 = median(mhi_2018, na.rm = TRUE)) |>
-  select(study_year, mcsa, mfccsa, mhi_2018)
-
-plot <- clean_data |>
-  rename('Weekly Center Based Care Price' = mcsa, 'Weekly Family Based Care Price' = mfccsa, 'Median Income' = mhi_2018) |>
-  pivot_longer(cols = -study_year, names_to = "Variable", values_to = "value") |>
-  mutate(Variable = fct_relevel(Variable, 
-                                "Weekly Center Based Care Price", 
-                                "Weekly Family Based Care Price", 
-                                "Median Income"))
-
-ggplot(plot, aes(study_year, value, color = Variable)) +
-  geom_line() +
-  scale_y_continuous(labels = label_dollar()) +
-  labs(x = "Year", y = "", title = "Trends in Childcare Cost and Median Income", subtitle = "Measurments in US Dollars") +
-  facet_wrap(~ Variable, scales = "free_y", nrow = 1) +
-  theme_linedraw() +
-  scale_x_continuous(breaks = unique(plot$study_year)) +
-  theme(plot.title = element_text(margin = margin(b = 13), face = "bold"), 
-        plot.subtitle = element_text(size = 10),
-        legend.position = "none",
-        aspect.ratio = 0.9,
-        axis.text.x = element_text(size = 7, angle = 45, hjust = 1)) +
-  scale_color_manual(values = c("orange", "coral1", "steelblue2"))
+fish |>
+  select(weight, year, section, trip) |>
+  group_by(year, section, trip) |>
+  summarize(number_of_missing_values = sum(is.na(weight)), .groups = "drop") |>
+  mutate(trip = fct_recode(as.factor(trip), "Trip 1" = "1", "Trip 2" = "2"),
+         year = as.factor(year)) |>
+  ggplot(aes(x = year, y = number_of_missing_values, fill = section)) +
+  geom_col(position = "dodge") +
+  facet_wrap(~trip) +
+  labs(title = "Missing Trout Weight Data From Mark Recapture Study (Blackfoot River, Montana)", x = "Year", y = "", subtitle = "Number of Missing Values") +
+  theme(axis.text.x = element_text(size = 7)) 
 ```
 
 ## Data Simulation & Statisical Models
@@ -1296,14 +1549,44 @@ ggplot(plot, aes(study_year, value, color = Variable)) +
 
 ```{r}
 #| label: dsm-1-1
+#Lab 10 Question 8
 
+mycifun <- function(beta0, beta1, n){
+  intercept = beta0
+  slope = beta1
+  x <- runif(n, min = 0, max = 1)
+  ep <- rnorm(n, mean = 0, sd = 1)
+  y = intercept + x*slope + ep
+  observed_data <- tibble(x, y)
+  simmed_lm <- lm(y ~ x, 
+                 data = observed_data)
+  broom::tidy(simmed_lm, 
+            conf.int = TRUE, 
+            conf.level = 0.95) |>
+  filter(term == "x") |> 
+  select(estimate, conf.low, conf.high) |>
+  mutate(cover = ifelse(beta1 >= conf.low & beta1 <= conf.high, 1, 0))
+}
 ```
 
 -   Example 2
 
 ```{r}
 #| label: dsm-1-2
+#Lab 10 Question 1
+#Your comments: What tools have we learned in this class to select elements and summarize statistics?
+#REVISION: I changed it to a summarize piping in the dataframe before so I don't need to use the dollar sign to grab columns.
 
+randomBabies <- function(n_babies){
+  babies_data <- tibble(baby = 1:n_babies,
+                      mother = sample(1:n_babies, 
+                                      size = n_babies, 
+                                      replace = FALSE)
+                      )
+  babies_data |>
+    summarize(matches = sum(baby == mother)) |>
+    pull(matches)
+}
 ```
 
 **DSSM-2: I can conduct common statistical analyses in R.**
@@ -1344,17 +1627,19 @@ summary(species_mod)
 ## Revising My Thinking
 
 <!-- How did you revise your thinking throughout the course? How did you revise your thinking on the code examples you have provided in your portfolio? -->
-I think my biggest strength in this class was revising. I made sure to revise my work every single week even if there were only a couple corrections, and I would even make the changes on questions that got a successful grade. One assignment that stands out to me is Challenge 4, I didn't have much time to work on it so I did my best with the time I had. Then, after I got my revisions, which didn't have any specific feedback it just said Satisfactory, and Progressing. I went back to this assignment and spent a lot of time working on the readability, titles, axes ticks, legend, colors, and themes to make it something I am very proud of and I think is a lot more interesting to look at. I learn so much through the revision process and I think I have demonstrated my commitment to learning in this class by my effort with revisions.
-<!-- For the revisions included in your Portfolio, to help me understand the nature of your revisions, please denote somehow the feedback I provided you (e.g., boldface, italics, colored text) before your revisions. -->
+
+I think my biggest strength in this class was revising. I made sure to revise my work every single week even if there were only a couple corrections, and I would even make the changes on questions that got a successful grade. One assignment that stands out to me is Challenge 4, I didn't have much time to work on it so I did my best with the time I had. Then, after I got my revisions, which didn't have any specific feedback it just said Satisfactory, and Progressing. I went back to this assignment and spent a lot of time working on the readability, titles, axes ticks, legend, colors, and themes to make it something I am very proud of and I think is a lot more interesting to look at. I learn so much through the revision process and I think I have demonstrated my commitment to learning in this class by my effort with revisions. Towards the end of the quarter when revisions weren't mandatory, I continued to do all of them and I would even do multiple rounds of revisions until I got satisfactory marks on each category.<!-- For the revisions included in your Portfolio, to help me understand the nature of your revisions, please denote somehow the feedback I provided you (e.g., boldface, italics, colored text) before your revisions. -->
 
 ## Extending My Thinking
 
 <!-- How did you extended your thinking throughout the course? How did you extend your thinking on the code examples you have provided in your portfolio? -->
-When it comes to the challenge assignments, in order to go above and beyond, I often needed to learn new things that we haven't done in class. But I wouldn't let that stop me from making my output look exactly how I want it. One example is once again the Challenge 4 assignment. Where to get more creative with the table I learned how to use functions like options(width = ) to make it so you can scroll to see the whole graph instead of it being stacked. And I also learned how to use gt() to change the colors and bold the column names. I did a lot of learning outside of what was covered in class, and I think I have gotten good at citing all my sources that my learning is coming from. 
+
+When it comes to the challenge assignments, in order to go above and beyond, I often needed to learn new things that we haven't done in class. But I wouldn't let that stop me from making my output look exactly how I want it. One example is once again the Challenge 4 assignment. Where to get more creative with the table I learned how to use functions like options(width = ) to make it so you can scroll to see the whole graph instead of it being stacked. And I also learned how to use gt() to change the colors and bold the column names. I did a lot of learning outside of what was covered in class, and I think I have gotten good at citing all the sources that my learning is coming from. For this portfolio I added a geom_segment to one of my graphs to draw a line from the first year of data to the last, showing the overall difference from the beginning to end of the study, I often do this myself when I look at tables, and I wanted to learn how to do it. It tool a lot of time and trial and error but I ended up happy with the result and the new skill I have.
 
 ## Peer Support & Collaboration
 
 <!-- Include an image or a description of feedback you gave that you are proud of (either in a peer review or in Discord). -->
+
 Peer review for Lab 5:
 
 Hi Scarlet,
@@ -1362,4 +1647,5 @@ Hi Scarlet,
 I really liked how throughout your assignment you had little pieces that make it easy for the reader to follow along. I like the way you would either printed out the end result of your findings in each code chunk or put comments in your cod chunks and then having them output. This made it super easy to follow along and see the progress being made throughout the search. One thing I'm not sure about is when you were doing your inner joins, you saved joint_data and joint_data2, and gym_person, and in joint_data2 you called back to the first one. Maybe this was the only way to do it but there might have also been a more efficient way of doing it all in one pipeline. You do this later with hire_join as well. That's the only thing that I think could maybe have done more efficiently great job.
 
 <!-- Include a description of how you grew as a collaborator through the weekly pair programming activities.   -->
+
 I think I improved a lot through the weekly pair programming activities. Because I put in a lot of effort with the check ins, I always have a sense of confidence going into the pair activities which I didn't have at the beginning. I am now able to share my ideas without being worried if I made a mistake. And I think I have been a great parter as well, welcoming all ideas, and helping work through the problems together. The last pair activity we did was the one where I felt like I was the best collaborator and we both built of each others ideas. I have also gotten better and better at following the pair activity roles of being the typer and the talker. It is hard to vocalize the code you are thinking of and I think I have gotten a lot better.
