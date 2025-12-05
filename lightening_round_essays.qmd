@@ -8,14 +8,20 @@ editor: visual
 
 1. Finish the sentence with another student’s name: "If [Name of Student] doesn’t earn an A, then nobody should, because..." Explain your choice and your reasoning.
 
+If Otis doesn't earn an A, then nobody should, becuase not only was he an active collaborator and member of class, his code was always creative and you could tell just how much work he put into othe class. He was always happy to help in class and be an give advice without giving up the actual answer.
 
 2. What was the most difficult part of the class for you? List a general topic, a specific problem, a kind of work we did, etc. and explain why.
 
+The Check-ins were the hardest for me, the weeks that had videos were always my favorite becuase it was like a little pre lecture and then I would get more detail in class, but when there was a lot of reading I would always do my best to take in all the information but when I would get to the quizes I still felt pretty lost and had to try them multiple times.
 
 3. What was the easiest part of the class for you? Explain why.
 
+The group activities in class was the "easiest" part for me, becuase my group always finished on time and was able to do it with just class materials which made it much quicker and simpler, than having to search the internet and cite a source when I was confused.
 
 4. What part of the class surprised or interested you the most? Explain why.
 
+I was surprised by how fun it could be to make a data visualization that I am proud of. When the code continues to give errors and you tweak it and tweak it and then it finally runs and it looks good that was very fun. I liked the problems where you could make whatever graph you wanted with the dataset, so I could get into the thought process of what I wanted to show, that is a process I didn't think I would enjoy as much as I did.
 
 5. Give one piece of advice to a student just beginning a quarter of STAT 331 that will help them be successful in learning.
+
+Give yourself a lot of time for the check-ins, and work on the labs bit by bit so you dont have to do it all in one day. Also put a lot of effort into the midterm portfolio so that the final portfolio is much easier.
